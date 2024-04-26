@@ -7,11 +7,11 @@ Qingping openapi and sensor data decode
     | - lor_robb.go
     | - lor_test.go
     | - tlv_decode.go
-| - example API文档
+| - example
     | - encoding/main.go
 | - openapi TODO
 | - mqtt TODO
 ```
 
-## 使用
-- encoding 
+## How to use
+- [Robb Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/main.go)
