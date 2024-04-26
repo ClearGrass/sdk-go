@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	encodeData := "01412401662758412FF2F5000003F6000D000E005C000C00000146FF000C3ABDCD00312E302E36EA05"
+	encodeData := "AUEkAWYq9Tgw8isAAAIlAAYABgBsACYAAAG8/wA0MzYwADEuMS4weNA="
 
-	dataBytes, err := hex.DecodeString(encodeData)
+	dataBytes, err := base64.StdEncoding.DecodeString(encodeData)
 	if err != nil {
 		return
 	}

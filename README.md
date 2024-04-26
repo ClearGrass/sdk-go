@@ -12,3 +12,6 @@ Qingping openapi and sensor data decode
 | - openapi TODO
 | - mqtt TODO
 ```
+
+## 使用
+- encoding 
