@@ -14,4 +14,4 @@ Qingping openapi and sensor data decode
 ```
 
 ## How to use
-- [Robb Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/main.go)
+- [Qingping Indoor Environment Monitor Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/main.go)
