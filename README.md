@@ -4,11 +4,11 @@ Qingping openapi and sensor data decode
 ## Project structure
 ```
 | - encoding 
-    | - lor_robb.go
-    | - lor_test.go
+    | - lora_robb.go
+    | - lora_test.go
     | - tlv_decode.go
 | - example
-    | - encoding/main.go
+    | - encoding/lora_robb.go
 | - openapi TODO
 | - mqtt TODO
 ```
