@@ -27,7 +27,7 @@ func exampleSetIntervalCmd() {
 
 	msg.CmdType = 0x32
 	msg.IntervalSetting = &encoding.IntervalSetting{CollectInterval: 60, ReportInterval: 60}
-	msg.SetEndFlag(1)
+	msg.SetDebug(1)
 
 	ret, err := encoding.TlvEncode(msg)
 	if err != nil {

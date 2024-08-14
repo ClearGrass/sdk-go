@@ -125,6 +125,7 @@ type MessagePod struct {
 	WifiInfo             *WifiInfo                `json:"wifiInfo,omitempty"`             //
 	Other                map[string]string        `json:"other,omitempty"`                // 其他配置
 	ReadingOffsetSetting *ReadingOffsetSetting    `json:"readingOffsetSetting,omitempty"` // 读数偏移
+	Debug                *int                     `json:"debug,omitempty"`
 	//SensorSetting        map[string]*SensorMetricSetting `json:"sensorSetting,omitempty"`        // sensor 传感器设置
 }
 
@@ -144,6 +145,17 @@ func NewMessagePod(fieldInit bool) *MessagePod {
 
 func (m *MessagePod) SetEndFlag(val int) {
 	m.EndFlag = &val
+}
+
+func (m *MessagePod) SetDebug(val int) {
+	m.Debug = &val
+}
+
+func (m *MessagePod) GetDebug() int {
+	if m.Debug == nil {
+		return 0 // 无效值
+	}
+	return *m.Debug
 }
 
 func (m *MessagePod) GetEndFlag() int {

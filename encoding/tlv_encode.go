@@ -702,6 +702,14 @@ func TlvEncode(msg *MessagePod) (out []byte, err error) {
 		packets = append(packets, subPacket)
 	}
 
+	if msg.Debug != nil {
+		subPacket := &TlvData{
+			Cmd:        0x21,
+			PayloadAny: uint8(msg.GetDebug()),
+		}
+		packets = append(packets, subPacket)
+	}
+
 	if interval := msg.IntervalSetting; interval != nil {
 		if interval.CollectInterval != 0 {
 			subPacket := &TlvData{
