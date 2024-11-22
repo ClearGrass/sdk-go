@@ -20,7 +20,7 @@ public class TLVDecoder {
 
         @Override
         public String toString() {
-            return "SubPack{" +
+            return "{" +
                     "key='" + key + '\'' +
                     ", len=" + len +
                     ", payload=" + bytesToHex(payload) +
@@ -29,12 +29,12 @@ public class TLVDecoder {
     }
 
     // 类：TlvUnpackResult，表示 TLV 解包结果
-    public static class TlvUnpackResult {
+    public static class TlvSubPackList {
         public String cmd;
         public int length;
         public List<SubPack> subPackList;
 
-        public TlvUnpackResult(String cmd, int length, List<SubPack> subPackList) {
+        public TlvSubPackList(String cmd, int length, List<SubPack> subPackList) {
             this.cmd = cmd;
             this.length = length;
             this.subPackList = subPackList;
@@ -43,14 +43,13 @@ public class TLVDecoder {
 
         @Override
         public String toString() {
-            return "TlvUnpackResult{" +
+            return "{" +
                     "cmd='" + cmd + '\'' +
                     ", length=" + length +
                     ", subPackList=" + subPackList +
                     '}';
         }
     }
-
     // 类：SensorData，表示解码后的传感器数据
     public static class SensorData {
         public String dataType;
@@ -63,7 +62,7 @@ public class TLVDecoder {
 
         @Override
         public String toString() {
-            return "SensorData{" +
+            return "{" +
                     "dataType='" + dataType + '\'' +
                     ", timestamp=" + timestamp +
                     ", temperature=" + temperature +
@@ -74,6 +73,30 @@ public class TLVDecoder {
                     '}';
         }
     }
+    
+
+    public static class TlvUnpackResult {
+        public String cmd;
+        public int length;
+        public List<SensorData> sensorData;
+
+        public TlvUnpackResult(String cmd, int length) {
+            this.cmd = cmd;
+            this.length = length;
+        }
+
+
+        @Override
+        public String toString() {
+            return "{" +
+                    "cmd='" + cmd + '\'' +
+                    ", length=" + length +
+                    ", sensorData=" + sensorData +
+                    '}';
+        }
+    }
+
+
 
     // 方法：将十六进制字符串转换为字节数组
     public static byte[] hexStringToByteArray(String s) {
@@ -108,7 +131,7 @@ public class TLVDecoder {
     }
 
     // 方法：解包 TLV 数据
-    public static TlvUnpackResult tlvUnpack(byte[] byteArray) {
+    public static TlvSubPackList tlvUnpack(byte[] byteArray) {
         if (byteArray.length < 5) {
             throw new IllegalArgumentException("字节数组长度不足以解包 TLV 数据");
         }
@@ -147,7 +170,7 @@ public class TLVDecoder {
             subPackList.add(subPack);
         }
 
-        return new TlvUnpackResult(cmd, length, subPackList);
+        return new TlvSubPackList(cmd, length, subPackList);
     }
 
     
@@ -170,10 +193,12 @@ public class TLVDecoder {
     }
 
     // 方法：解码实时数据
-    public static SensorData decodeRealTimeData(byte[] byteArray) {
+    public static List<SensorData> decodeRealTimeData(byte[] byteArray) {
         if (byteArray.length < 11) {
             throw new IllegalArgumentException("实时数据字节数组长度不足");
         }
+
+        List<SensorData> sensorDataList = new ArrayList<>();
 
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
         SensorData sensorData = decodeTHData(Arrays.copyOfRange(byteArray, 4, byteArray.length));
@@ -185,12 +210,12 @@ public class TLVDecoder {
         sensorData.dataType = "event";
         sensorData.timestamp = timestamp;
         sensorData.rssi = rssi;
-
-        return sensorData;
+        sensorDataList.add(sensorData);
+        return sensorDataList;
     }
 
 
-    // 方法：解码历史数据（暂未实现）
+    // 方法：解码历史数据
     public static List<SensorData> decodeHistoryData(byte[] byteArray) {
         List<SensorData> sensorDataList = new ArrayList<>();
 
@@ -214,35 +239,40 @@ public class TLVDecoder {
     }
 
     // 方法：解析 TLV 数据并处理
-    public static void tlvDecode(byte[] byteArray) {
-        TlvUnpackResult unpackData = tlvUnpack(byteArray);
+    public static TlvUnpackResult tlvDecode(byte[] byteArray) {
+        TlvSubPackList subPackRet = tlvUnpack(byteArray);
+        TlvUnpackResult unPackRet = new TlvUnpackResult(subPackRet.cmd,subPackRet.length);
 
-        for (SubPack subPack : unpackData.subPackList) {
+        for (SubPack subPack : subPackRet.subPackList) {
             switch (subPack.key) {
                 case "14":
-                    SensorData realtimeData = decodeRealTimeData(subPack.payload);
-                    System.out.println(realtimeData);
+                    List<SensorData> realtimeData = decodeRealTimeData(subPack.payload);
+                    unPackRet.sensorData = realtimeData;
                     break;
                 
                 case "03":
                     List<SensorData> historyData = decodeHistoryData(subPack.payload);
-                    System.out.println(historyData);
+                    unPackRet.sensorData = historyData;
                     break;
                 
                 default:
                     break;
             }
         }
+
+        return unPackRet;
     }
 
     // 主方法
     public static void main(String[] args) {
-        // String src = "43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109";
-        // byte[] bs = hexStringToByteArray(src);
-        // tlvDecode(bs);
+        String src = "43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109";
+        byte[] bs = hexStringToByteArray(src);
+        TlvUnpackResult unpackData = tlvDecode(bs);
+        System.out.println(unpackData);
 
-        String src = "Q0cxMAA4AgApAB0BAAEDJAAc4j9nhAOsQS4AADarMS4AADatMS4AADauMS4AADauMS4AADYYCg==";
-        byte[] bs = Base64.getDecoder().decode(src);
-        tlvDecode(bs);
+        // String src = "Q0cxMAA4AgApAB0BAAEDJAAc4j9nhAOsQS4AADarMS4AADatMS4AADauMS4AADauMS4AADYYCg==";
+        // byte[] bs = Base64.getDecoder().decode(src);
+        // TlvUnpackResult unpackData = tlvDecode(bs);
+        // System.out.println(unpackData);
     }
 }
