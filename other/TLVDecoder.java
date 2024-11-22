@@ -8,26 +8,14 @@ public class TLVDecoder {
 
     // 类：SubPack，表示子包
     public static class SubPack {
-        private String key;
-        private int len;
-        private byte[] payload;
+        public String key;
+        public int len;
+        public byte[] payload;
 
         public SubPack(String key, int len, byte[] payload) {
             this.key = key;
             this.len = len;
             this.payload = payload;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public int getLen() {
-            return len;
-        }
-
-        public byte[] getPayload() {
-            return payload;
         }
 
         @Override
@@ -42,9 +30,9 @@ public class TLVDecoder {
 
     // 类：TlvUnpackResult，表示 TLV 解包结果
     public static class TlvUnpackResult {
-        private String cmd;
-        private int length;
-        private List<SubPack> subPackList;
+        public String cmd;
+        public int length;
+        public List<SubPack> subPackList;
 
         public TlvUnpackResult(String cmd, int length, List<SubPack> subPackList) {
             this.cmd = cmd;
@@ -52,17 +40,6 @@ public class TLVDecoder {
             this.subPackList = subPackList;
         }
 
-        public String getCmd() {
-            return cmd;
-        }
-
-        public int getLength() {
-            return length;
-        }
-
-        public List<SubPack> getSubPackList() {
-            return subPackList;
-        }
 
         @Override
         public String toString() {
@@ -74,57 +51,19 @@ public class TLVDecoder {
         }
     }
 
-    // 类：DecodedRealTimeData，表示解码后的实时数据
-    public static class DecodedRealTimeData {
-        private String dataType;
-        private int timestamp;
-        private double temperature;
-        private double humidity;
-        private int pressure;
-        private int battery;
-        private int rssi;
-
-        public DecodedRealTimeData(String dataType, int timestamp, double temperature, double humidity, int pressure, int battery, int rssi) {
-            this.dataType = dataType;
-            this.timestamp = timestamp;
-            this.temperature = temperature;
-            this.humidity = humidity;
-            this.pressure = pressure;
-            this.battery = battery;
-            this.rssi = rssi;
-        }
-
-        public String getDataType() {
-            return dataType;
-        }
-
-        public int getTimestamp() {
-            return timestamp;
-        }
-
-        public double getTemperature() {
-            return temperature;
-        }
-
-        public double getHumidity() {
-            return humidity;
-        }
-
-        public int getPressure() {
-            return pressure;
-        }
-
-        public int getBattery() {
-            return battery;
-        }
-
-        public int getRssi() {
-            return rssi;
-        }
+    // 类：SensorData，表示解码后的传感器数据
+    public static class SensorData {
+        public String dataType;
+        public int timestamp;
+        public double temperature;
+        public double humidity;
+        public int pressure;
+        public int battery;
+        public int rssi;
 
         @Override
         public String toString() {
-            return "DecodedRealTimeData{" +
+            return "SensorData{" +
                     "dataType='" + dataType + '\'' +
                     ", timestamp=" + timestamp +
                     ", temperature=" + temperature +
@@ -211,44 +150,83 @@ public class TLVDecoder {
         return new TlvUnpackResult(cmd, length, subPackList);
     }
 
+    
+    public static SensorData decodeTHData(byte[] byteArray) {
+        int th = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 3));
+        double temperature = ((th >> 12) - 500) / 10.0;
+        double humidity = (th & 0xFFF) / 10.0;
+        int pressure = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5));
+        int battery = byteArray[5] & 0xFF; // 无符号
+ 
+
+        SensorData sensorData = new SensorData();
+        sensorData.dataType = "event";
+        sensorData.temperature = temperature;
+        sensorData.humidity = humidity;
+        sensorData.pressure = pressure;
+        sensorData.battery = battery;
+
+        return sensorData;
+    }
+
     // 方法：解码实时数据
-    public static DecodedRealTimeData decodeRealTimeData(byte[] byteArray) {
+    public static SensorData decodeRealTimeData(byte[] byteArray) {
         if (byteArray.length < 11) {
             throw new IllegalArgumentException("实时数据字节数组长度不足");
         }
 
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
-        int th = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 4, 7));
-        double temperature = ((th >> 12) - 500) / 10.0;
-        double humidity = (th & 0xFFF) / 10.0;
-        int pressure = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
-        int battery = byteArray[9] & 0xFF; // 无符号
+        SensorData sensorData = decodeTHData(Arrays.copyOfRange(byteArray, 4, byteArray.length));
         int rssi = byteArray[10] & 0xFF; // 无符号
         if (rssi >= 128) {
             rssi -= 256;
         }
 
-        return new DecodedRealTimeData("event", timestamp, temperature, humidity, pressure, battery, rssi);
+        sensorData.dataType = "event";
+        sensorData.timestamp = timestamp;
+        sensorData.rssi = rssi;
+
+        return sensorData;
     }
 
+
     // 方法：解码历史数据（暂未实现）
-    public static void decodeHistoryData(byte[] byteArray) {
-        // TODO: 实现历史数据的解码逻辑
+    public static List<SensorData> decodeHistoryData(byte[] byteArray) {
+        List<SensorData> sensorDataList = new ArrayList<>();
+
+        int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
+        int duration = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 4, 6));
+        int index = 6;
+        int i = 0;
+        int packLen = 6;
+
+        while (index < byteArray.length) {
+            SensorData sensorData = decodeTHData(Arrays.copyOfRange(byteArray, index, index+packLen));
+            sensorData.timestamp = timestamp + duration* i;
+            sensorData.dataType = "data";
+            sensorDataList.add(sensorData);
+
+            index += packLen;
+            i++;
+        }
+
+        return sensorDataList;
     }
 
     // 方法：解析 TLV 数据并处理
     public static void tlvDecode(byte[] byteArray) {
         TlvUnpackResult unpackData = tlvUnpack(byteArray);
 
-        for (SubPack subPack : unpackData.getSubPackList()) {
+        for (SubPack subPack : unpackData.subPackList) {
             switch (subPack.key) {
                 case "14":
-                    DecodedRealTimeData realtimeData = decodeRealTimeData(subPack.getPayload());
+                    SensorData realtimeData = decodeRealTimeData(subPack.payload);
                     System.out.println(realtimeData);
                     break;
                 
                 case "03":
-                    decodeHistoryData(subPack.getPayload());
+                    List<SensorData> historyData = decodeHistoryData(subPack.payload);
+                    System.out.println(historyData);
                     break;
                 
                 default:
@@ -259,8 +237,12 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109";
-        byte[] bs = hexStringToByteArray(src);
+        // String src = "43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109";
+        // byte[] bs = hexStringToByteArray(src);
+        // tlvDecode(bs);
+
+        String src = "Q0cxMAA4AgApAB0BAAEDJAAc4j9nhAOsQS4AADarMS4AADatMS4AADauMS4AADauMS4AADYYCg==";
+        byte[] bs = Base64.getDecoder().decode(src);
         tlvDecode(bs);
     }
 }
