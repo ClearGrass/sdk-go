@@ -57,8 +57,10 @@ public class TLVDecoder {
         public double temperature;
         public double humidity;
         public int pressure;
+        public int co2;
         public int battery;
         public int rssi;
+        
 
         @Override
         public String toString() {
@@ -68,6 +70,7 @@ public class TLVDecoder {
                     ", temperature=" + temperature +
                     ", humidity=" + humidity +
                     ", pressure=" + pressure +
+                    ", co2=" + co2 +
                     ", battery=" + battery +
                     ", rssi=" + rssi +
                     '}';
@@ -238,10 +241,34 @@ public class TLVDecoder {
         return sensorDataList;
     }
 
+     // 方法：解码历史数据
+     public static SensorData decodeHistoryDataV2(byte[] byteArray) {
+        SensorData sensorData = new SensorData();
+
+        int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
+        sensorData.timestamp = timestamp;
+        
+	    switch (byteArray[4]) {
+            case 4:
+                int temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                int humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                int co2Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
+                sensorData.temperature =  temperatureVal/10.0;
+                sensorData.humidity = humidityVal/10.0;
+                sensorData.co2 = co2Val;
+                break;
+        }
+
+       
+        return sensorData;
+    }
+
     // 方法：解析 TLV 数据并处理
     public static TlvUnpackResult tlvDecode(byte[] byteArray) {
         TlvSubPackList subPackRet = tlvUnpack(byteArray);
         TlvUnpackResult unPackRet = new TlvUnpackResult(subPackRet.cmd,subPackRet.length);
+        unPackRet.sensorData = new ArrayList<>();
+
 
         for (SubPack subPack : subPackRet.subPackList) {
             switch (subPack.key) {
@@ -255,6 +282,11 @@ public class TLVDecoder {
                     unPackRet.sensorData = historyData;
                     break;
                 
+                case "85":
+                    SensorData unitData = decodeHistoryDataV2(subPack.payload);
+                    unPackRet.sensorData.add(unitData);
+                    break;
+
                 default:
                     break;
             }
@@ -265,7 +297,7 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109";
+        String src = "43474235003802005b00650100ba6401005c110500312e322e31850b00288b11680413019901e101850b00309211680419019101df011d010001470b";
         byte[] bs = hexStringToByteArray(src);
         TlvUnpackResult unpackData = tlvDecode(bs);
         System.out.println(unpackData);
