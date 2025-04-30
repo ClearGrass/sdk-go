@@ -269,6 +269,8 @@ public class TLVDecoder {
         TlvUnpackResult unPackRet = new TlvUnpackResult(subPackRet.cmd,subPackRet.length);
         unPackRet.sensorData = new ArrayList<>();
 
+        // 兼容新协议
+        int batteryVal = -1;
 
         for (SubPack subPack : subPackRet.subPackList) {
             switch (subPack.key) {
@@ -287,8 +289,18 @@ public class TLVDecoder {
                     unPackRet.sensorData.add(unitData);
                     break;
 
+                case "64":
+                    batteryVal = subPack.payload[0];
+                    break;
                 default:
                     break;
+            }
+        }
+
+        for (int i = 0; i < unPackRet.sensorData.size(); i++) {
+            SensorData unitData =  unPackRet.sensorData.get(i);
+            if (batteryVal >=0) {
+                unitData.battery = batteryVal;
             }
         }
 
