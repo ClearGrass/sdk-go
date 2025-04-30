@@ -241,21 +241,48 @@ public class TLVDecoder {
         return sensorDataList;
     }
 
-     // 方法：解码历史数据
+     // 方法：解码v2版本的数据
      public static SensorData decodeHistoryDataV2(byte[] byteArray) {
         SensorData sensorData = new SensorData();
 
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
         sensorData.timestamp = timestamp;
         
+        int temperatureVal;
+        int humidityVal;
+        int co2Val;
+        int pressureVl;
+
 	    switch (byteArray[4]) {
-            case 4:
-                int temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
-                int humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
-                int co2Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
+            case 1:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                sensorData.temperature =  temperatureVal/10.0;
+                sensorData.humidity = humidityVal/10.0;
+                break;
+            case 2:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                sensorData.temperature =  temperatureVal/10.0;
+                break;
+            case 3:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                pressureVl = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
+                sensorData.temperature =  temperatureVal/10.0;
+                sensorData.humidity = humidityVal/10.0;
+                sensorData.pressure = pressureVl;
+                break;
+            case 4: 
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                co2Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
                 sensorData.temperature =  temperatureVal/10.0;
                 sensorData.humidity = humidityVal/10.0;
                 sensorData.co2 = co2Val;
+                break;
+            default:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                sensorData.temperature =  temperatureVal/10.0;
                 break;
         }
 
@@ -263,7 +290,7 @@ public class TLVDecoder {
         return sensorData;
     }
 
-    // 方法：解析 TLV 数据并处理
+    // 方法：解析 TLV 数据
     public static TlvUnpackResult tlvDecode(byte[] byteArray) {
         TlvSubPackList subPackRet = tlvUnpack(byteArray);
         TlvUnpackResult unPackRet = new TlvUnpackResult(subPackRet.cmd,subPackRet.length);
@@ -284,6 +311,7 @@ public class TLVDecoder {
                     unPackRet.sensorData = historyData;
                     break;
                 
+                // 下面是v2版本的解析
                 case "85":
                     SensorData unitData = decodeHistoryDataV2(subPack.payload);
                     unPackRet.sensorData.add(unitData);
