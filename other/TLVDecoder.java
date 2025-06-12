@@ -58,6 +58,11 @@ public class TLVDecoder {
         public double humidity;
         public int pressure;
         public int co2;
+        public int pm25;
+        public int pm10;
+        public int tvoc;
+        public int noise;
+        public int light;
         public int battery;
         public int rssi;
         
@@ -71,6 +76,11 @@ public class TLVDecoder {
                     ", humidity=" + humidity +
                     ", pressure=" + pressure +
                     ", co2=" + co2 +
+                    ", pm25=" + pm25 +
+                    ", pm10=" + pm10 +
+                    ", tvoc=" + tvoc +
+                    ", noise=" + noise +
+                    ", light=" + light +
                     ", battery=" + battery +
                     ", rssi=" + rssi +
                     '}';
@@ -248,11 +258,7 @@ public class TLVDecoder {
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
         sensorData.timestamp = timestamp;
         
-        int temperatureVal;
-        int humidityVal;
-        int co2Val;
-        int pressureVl;
-
+        int temperatureVal,humidityVal,co2Val,pressureVl,pm25Val,pm10Val,tvocVal,noiseVal,lightVal;
 	    switch (byteArray[4]) {
             case 1:
                 temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
@@ -280,13 +286,32 @@ public class TLVDecoder {
                 sensorData.humidity = humidityVal/10.0;
                 sensorData.co2 = co2Val;
                 break;
+
+            case 10:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                co2Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
+                pm25Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 11, 13));
+                pm10Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 13, 15));
+                tvocVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 15, 17));
+                noiseVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 17, 19));
+                lightVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 19, 23));
+
+                sensorData.temperature =  temperatureVal/10.0;
+                sensorData.humidity = humidityVal/10.0;
+                sensorData.co2 = co2Val;
+                sensorData.pm25 = pm25Val;
+                sensorData.pm10 = pm10Val;
+                sensorData.tvoc = tvocVal;
+                sensorData.noise = noiseVal;
+                sensorData.light = lightVal;
+
             default:
                 temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
                 sensorData.temperature =  temperatureVal/10.0;
                 break;
         }
 
-       
         return sensorData;
     }
 
@@ -337,7 +362,7 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "43474235003802005b00650100ba6401005c110500312e322e31850b00288b11680413019901e101850b00309211680419019101df011d010001470b";
+        String src = "4347413D00850B00AEBF1168042301980191013802005D00110500312E322E31890100838A04007EA30100650100BB6401005B700400240000002C0100001D010000EF0B";
         byte[] bs = hexStringToByteArray(src);
         TlvUnpackResult unpackData = tlvDecode(bs);
         System.out.println(unpackData);
