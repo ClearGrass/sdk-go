@@ -98,10 +98,32 @@ def decodeHistoryData(byteArray,productId = 0):
 
     return historyDataList
 
+def decodeSensorDataV2(byteArray):
+    sensorData = {}
+    timestamp = bytesToIntLittleEndian(byteArray[0:4])
+    sensorData['timestamp'] = timestamp
+
+    if byteArray[4] == 1:
+        pass
+    elif byteArray[4] == 4:
+        temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
+        humidityVal = bytesToIntLittleEndian(byteArray[7:9])
+        co2Val = bytesToIntLittleEndian(byteArray[9:11])
+        sensorData['temperature'] = temperatureVal/10.0
+        sensorData['humidity'] = humidityVal/10.0
+        sensorData['co2'] = co2Val
+    elif byteArray[4] == 10:
+        temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
+        humidityVal = bytesToIntLittleEndian(byteArray[7:9])
+        sensorData['temperature'] = temperatureVal/10.0
+        sensorData['humidity'] = humidityVal/10.0
+
+    return sensorData
 
 def tlvDecode(byteArray):
     unpackData = tlvUnpack(byteArray)
     outData = {'productId': unpackData['productId']}
+    dataList = []
     
     for subPack in unpackData['subPackList']: 
         if subPack['key'] == '14':
@@ -127,13 +149,20 @@ def tlvDecode(byteArray):
         if subPack['key'] == '05':
             collectInterval = bytesToIntLittleEndian(subPack['payload'])
             outData['collectInterval'] = collectInterval
+        if subPack['key'] == '85':
+            sensorData = decodeSensorDataV2(subPack['payload'])
+            dataList.append(sensorData)
 
+    if len(dataList) > 0:
+        outData['sensorData'] = dataList
+    
     return outData
 
 # test
 if __name__ == '__main__':
     # decode hex data
-    src = '43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109'
+    #src = '43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109'
+    src = '43474281003802005b00650100bf640100ff110500312e302e3385170034da5b680aee00a8026c020e000e004300260000000000851700b8dd5b680aed00a00260020d000d0042003300000000008517003ce15b680aec00910252020e000f003e00320000000000851700c0e45b680aec0098024c020e000e0040002a00000000001d0100015d1a'
     bs = bytes.fromhex(src)
     out = tlvDecode(bs)
     print(out)
