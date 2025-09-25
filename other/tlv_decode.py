@@ -104,7 +104,20 @@ def decodeSensorDataV2(byteArray):
     sensorData['timestamp'] = timestamp
 
     if byteArray[4] == 1:
-        pass
+        temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
+        humidityVal = bytesToIntLittleEndian(byteArray[7:9])
+        sensorData['temperature'] = temperatureVal/10.0
+        sensorData['humidity'] = humidityVal/10.0
+    elif byteArray[4] == 2:
+        temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
+        sensorData['temperature'] = temperatureVal/10.0
+    elif byteArray[4] == 3:
+        temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
+        humidityVal = bytesToIntLittleEndian(byteArray[7:9])
+        pressureVal = bytesToIntLittleEndian(byteArray[9:11])
+        sensorData['temperature'] = temperatureVal/10.0
+        sensorData['humidity'] = humidityVal/10.0
+        sensorData['pressure'] = pressureVal
     elif byteArray[4] == 4:
         temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
         humidityVal = bytesToIntLittleEndian(byteArray[7:9])
@@ -115,9 +128,19 @@ def decodeSensorDataV2(byteArray):
     elif byteArray[4] == 10:
         temperatureVal = bytesToIntLittleEndian(byteArray[5:7])
         humidityVal = bytesToIntLittleEndian(byteArray[7:9])
+        co2Val = bytesToIntLittleEndian(byteArray[9:11]);
+        pm25Val = bytesToIntLittleEndian(byteArray[11:13]);
+        pm10Val = bytesToIntLittleEndian(byteArray[13:15]);
+        tvocVal = bytesToIntLittleEndian(byteArray[15:17]);
+        noiseVal = bytesToIntLittleEndian(byteArray[17:19]);
+        lightVal = bytesToIntLittleEndian(byteArray[19:23]);
         sensorData['temperature'] = temperatureVal/10.0
         sensorData['humidity'] = humidityVal/10.0
-
+        sensorData['pm25'] = pm25Val
+        sensorData['pm10'] = pm10Val
+        sensorData['tvoc'] = tvocVal
+        sensorData['noise'] = noiseVal
+        sensorData['light'] = lightVal
     return sensorData
 
 def tlvDecode(byteArray):

@@ -9,6 +9,9 @@ Qingping openapi and sensor data decode
     | - tlv_decode.go
 | - example
     | - encoding/lora_robb.go
+| - other
+    | - tlv_decode.py
+    | - TLVDocode.java
 | - openapi TODO
 | - mqtt TODO
 ```
@@ -17,3 +20,12 @@ Qingping openapi and sensor data decode
 - [Qingping Indoor Environment Monitor Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/lora_robb.go)
 - [Qingping Indoor Environment Monitor WiFi](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/robb.go)
 - [Qingping Indoor Environment Monitor NB-IOT](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/robb.go)
+
+## java example
+```bash
+java TLVDocode.java
+```
+## python example
+```bash
+python tlv_decode.py
+```
