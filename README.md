@@ -16,10 +16,12 @@ Qingping openapi and sensor data decode
 | - mqtt TODO
 ```
 
-## How to use
-- [Qingping Indoor Environment Monitor Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/lora_robb.go)
+## go example
+### tlv decode
 - [Qingping Indoor Environment Monitor WiFi](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/robb.go)
-- [Qingping Indoor Environment Monitor NB-IOT](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/robb.go)
+### lora decode
+- [Qingping Indoor Environment Monitor Lora](https://github.com/ClearGrass/sdk-go/blob/main/example/encoding/lora_robb.go)
+
 
 ## java example
 ```bash
