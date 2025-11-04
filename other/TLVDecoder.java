@@ -32,11 +32,13 @@ public class TLVDecoder {
     public static class TlvSubPackList {
         public String cmd;
         public int length;
+        public int productId;
         public List<SubPack> subPackList;
 
-        public TlvSubPackList(String cmd, int length, List<SubPack> subPackList) {
+        public TlvSubPackList(String cmd, int length, int productId, List<SubPack> subPackList) {
             this.cmd = cmd;
             this.length = length;
+            this.productId = productId;
             this.subPackList = subPackList;
         }
 
@@ -46,6 +48,7 @@ public class TLVDecoder {
             return "{" +
                     "cmd='" + cmd + '\'' +
                     ", length=" + length +
+                    ", productId=" + productId +
                     ", subPackList=" + subPackList +
                     '}';
         }
@@ -64,6 +67,7 @@ public class TLVDecoder {
         public int noise;
         public int light;
         public int battery;
+        public double valveOpen;
         public int rssi;
         
 
@@ -82,6 +86,7 @@ public class TLVDecoder {
                     ", noise=" + noise +
                     ", light=" + light +
                     ", battery=" + battery +
+                    ", valveOpen=" + valveOpen +
                     ", rssi=" + rssi +
                     '}';
         }
@@ -151,6 +156,7 @@ public class TLVDecoder {
 
         String cmd = String.format("%02x", byteArray[2]); // byteArray[2:3].hex()
         int length = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5)); // byteArray[3:5]
+        int productId = 0;
 
         if (byteArray.length < 5 + length) {
             throw new IllegalArgumentException("字节数组长度不足以提取 payload");
@@ -178,35 +184,53 @@ public class TLVDecoder {
             }
             byte[] subPayload = Arrays.copyOfRange(payload, index, index + subLen);
             index += subLen;
-
             SubPack subPack = new SubPack(key, subLen, subPayload);
             subPackList.add(subPack);
+
+            if (key.equals("38")) {
+                productId = bytesToIntLittleEndian(subPayload);
+            }
         }
 
-        return new TlvSubPackList(cmd, length, subPackList);
+        return new TlvSubPackList(cmd, length, productId, subPackList);
     }
 
+    public static SensorData decodeValveData(byte[] byteArray,int productId) {
+        SensorData sensorData = new SensorData();
+        sensorData.dataType = "event";
+
+        double temperature = (bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 2)) - 500) / 10.0;
+        double valveOpen = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 2, 4)) / 10.0;
+        int battery = byteArray[4] & 0xFF; // 无符号
+
+        sensorData.temperature = temperature;
+        sensorData.valveOpen = valveOpen;
+        sensorData.battery = battery;
+        return sensorData;
+    }
     
-    public static SensorData decodeTHData(byte[] byteArray) {
+    public static SensorData decodeTHData(byte[] byteArray,int productId) {
+        SensorData sensorData = new SensorData();
+        sensorData.dataType = "event";
+
         int th = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 3));
         double temperature = ((th >> 12) - 500) / 10.0;
         double humidity = (th & 0xFFF) / 10.0;
         int pressure = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5));
         int battery = byteArray[5] & 0xFF; // 无符号
- 
-
-        SensorData sensorData = new SensorData();
-        sensorData.dataType = "event";
         sensorData.temperature = temperature;
         sensorData.humidity = humidity;
-        sensorData.pressure = pressure;
-        sensorData.battery = battery;
 
+        if (pressure > 0) {
+            sensorData.pressure = pressure;
+        }
+        
+        sensorData.battery = battery;
         return sensorData;
     }
 
     // 方法：解码实时数据
-    public static List<SensorData> decodeRealTimeData(byte[] byteArray) {
+    public static List<SensorData> decodeRealTimeData(byte[] byteArray,int productId) {
         if (byteArray.length < 11) {
             throw new IllegalArgumentException("实时数据字节数组长度不足");
         }
@@ -214,8 +238,18 @@ public class TLVDecoder {
         List<SensorData> sensorDataList = new ArrayList<>();
 
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
-        SensorData sensorData = decodeTHData(Arrays.copyOfRange(byteArray, 4, byteArray.length));
-        int rssi = byteArray[10] & 0xFF; // 无符号
+        SensorData sensorData;
+        switch (productId) {
+            case 0x4D:
+                sensorData = decodeValveData(Arrays.copyOfRange(byteArray, 4, byteArray.length),productId);
+                break;
+            default:
+                sensorData = decodeTHData(Arrays.copyOfRange(byteArray, 4, byteArray.length),productId);
+                break;
+        }
+
+        
+        int rssi = byteArray[byteArray.length-2] & 0xFF; // 无符号
         if (rssi >= 128) {
             rssi -= 256;
         }
@@ -229,7 +263,7 @@ public class TLVDecoder {
 
 
     // 方法：解码历史数据
-    public static List<SensorData> decodeHistoryData(byte[] byteArray) {
+    public static List<SensorData> decodeHistoryData(byte[] byteArray, int productId) {
         List<SensorData> sensorDataList = new ArrayList<>();
 
         int timestamp = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 4));
@@ -238,8 +272,20 @@ public class TLVDecoder {
         int i = 0;
         int packLen = 6;
 
+        if (productId == 0x4D) {
+            packLen = 5;
+        }
+
         while (index < byteArray.length) {
-            SensorData sensorData = decodeTHData(Arrays.copyOfRange(byteArray, index, index+packLen));
+            SensorData sensorData = new SensorData();
+            switch (productId) {
+                case 0x4D:
+                    sensorData = decodeValveData(Arrays.copyOfRange(byteArray, index, index+packLen),productId);
+                    break;
+                default:
+                    sensorData = decodeTHData(Arrays.copyOfRange(byteArray, index, index+packLen),productId);
+                    break;
+            }
             sensorData.timestamp = timestamp + duration* i;
             sensorData.dataType = "data";
             sensorDataList.add(sensorData);
@@ -327,12 +373,12 @@ public class TLVDecoder {
         for (SubPack subPack : subPackRet.subPackList) {
             switch (subPack.key) {
                 case "14":
-                    List<SensorData> realtimeData = decodeRealTimeData(subPack.payload);
+                    List<SensorData> realtimeData = decodeRealTimeData(subPack.payload,subPackRet.productId);
                     unPackRet.sensorData = realtimeData;
                     break;
                 
                 case "03":
-                    List<SensorData> historyData = decodeHistoryData(subPack.payload);
+                    List<SensorData> historyData = decodeHistoryData(subPack.payload,subPackRet.productId);
                     unPackRet.sensorData = historyData;
                     break;
                 
@@ -362,14 +408,14 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "43474281003802005b00650100bf640100ff110500312e302e3385170034da5b680aee00a8026c020e000e004300260000000000851700b8dd5b680aed00a00260020d000d0042003300000000008517003ce15b680aec00910252020e000f003e00320000000000851700c0e45b680aec0098024c020e000e0040002a00000000001d0100015d1a";
-        byte[] bs = hexStringToByteArray(src);
-        TlvUnpackResult unpackData = tlvDecode(bs);
-        System.out.println(unpackData);
-
-        // String src = "Q0cxMAA4AgApAB0BAAEDJAAc4j9nhAOsQS4AADarMS4AADatMS4AADauMS4AADauMS4AADYYCg==";
-        // byte[] bs = Base64.getDecoder().decode(src);
+        // String src = "43474281003802005b00650100bf640100ff110500312e302e3385170034da5b680aee00a8026c020e000e004300260000000000851700b8dd5b680aed00a00260020d000d0042003300000000008517003ce15b680aec00910252020e000f003e00320000000000851700c0e45b680aec0098024c020e000e0040002a00000000001d0100015d1a";
+        // byte[] bs = hexStringToByteArray(src);
         // TlvUnpackResult unpackData = tlvDecode(bs);
         // System.out.println(unpackData);
+
+        String src = "Q0cxIQADFQB4qwlphAPjAuABQ+QC4AFY5ALgAWA4AgBNAB0BAAEFCg==";
+        byte[] bs = Base64.getDecoder().decode(src);
+        TlvUnpackResult unpackData = tlvDecode(bs);
+        System.out.println(unpackData);
     }
 }
