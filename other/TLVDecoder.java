@@ -56,22 +56,22 @@ public class TLVDecoder {
     // 类：SensorData，表示解码后的传感器数据
     public static class SensorData {
         public String dataType;
-        public int timestamp;
-        public double temperature;
-        public double humidity;
-        public double probTemperature;
-        public double probHumidity;
-        public double co2Percent;
-        public int pressure;
-        public int co2;
-        public int pm25;
-        public int pm10;
-        public int tvoc;
-        public int noise;
-        public int light;
-        public int battery;
-        public double valveOpen;
-        public int rssi;
+        public Integer timestamp;
+        public Double temperature;
+        public Double humidity;
+        public Double probTemperature;
+        public Double probHumidity;
+        public Double co2Percent;
+        public Double pressure;
+        public Integer co2;
+        public Integer pm25;
+        public Integer pm10;
+        public Integer tvoc;
+        public Integer noise;
+        public Integer light;
+        public Integer battery;
+        public Double valveOpen;
+        public Integer rssi;
         
 
         @Override
@@ -222,7 +222,7 @@ public class TLVDecoder {
         int th = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 0, 3));
         double temperature = ((th >> 12) - 500) / 10.0;
         double humidity = (th & 0xFFF) / 10.0;
-        int pressure = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5));
+        double pressure = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5))/100.0;
         int battery = byteArray[5] & 0xFF; // 无符号
         sensorData.temperature = temperature;
         sensorData.humidity = humidity;
@@ -328,7 +328,7 @@ public class TLVDecoder {
                 pressureVl = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
                 sensorData.temperature =  temperatureVal/10.0;
                 sensorData.humidity = humidityVal/10.0;
-                sensorData.pressure = pressureVl;
+                sensorData.pressure = pressureVl/100.0;
                 break;
             case 4: 
                 temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
