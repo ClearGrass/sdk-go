@@ -81,6 +81,9 @@ public class TLVDecoder {
                     ", timestamp=" + timestamp +
                     ", temperature=" + temperature +
                     ", humidity=" + humidity +
+                    ", probTemperature=" + probTemperature +
+                    ", probHumidity=" + probHumidity +
+                    ", co2Percent=" + co2Percent +
                     ", pressure=" + pressure +
                     ", co2=" + co2 +
                     ", pm25=" + pm25 +
