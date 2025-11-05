@@ -369,7 +369,7 @@ public class TLVDecoder {
 
         // 兼容新协议
         int batteryVal = -1;
-
+        int rssi = 0;
         for (SubPack subPack : subPackRet.subPackList) {
             switch (subPack.key) {
                 case "14":
@@ -391,6 +391,13 @@ public class TLVDecoder {
                 case "64":
                     batteryVal = subPack.payload[0];
                     break;
+                    
+                case "65":
+                    rssi = subPack.payload[0];
+                    if (rssi >= 128) {
+                        rssi -= 256;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -400,6 +407,10 @@ public class TLVDecoder {
             SensorData unitData =  unPackRet.sensorData.get(i);
             if (batteryVal >=0) {
                 unitData.battery = batteryVal;
+            }
+
+            if (rssi < 0) {
+                unitData.rssi = rssi;
             }
         }
 
