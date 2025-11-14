@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -14,9 +15,9 @@ func TestDecodeLoraRobbData(t *testing.T) {
 		"01411300664312bc003c31f1fb075e6232517507ae628ca7",
 	}
 
-	//base64DataList := []string{
-	//	"AUEkAWYq9Tgu8isAAAILAAYABgBsACYAAAG8/WA0MZYWADEuMS4weNA=",
-	//}
+	// base64DataList := []string{
+	// 	"AUEkAWYq9Tgu8isAAAILAAYABgBsACYAAAG8/WA0MZYWADEuMS4weNA=",
+	// }
 
 	for _, src := range hexDataList {
 
@@ -36,4 +37,24 @@ func TestDecodeLoraRobbData(t *testing.T) {
 	//	c, _ := json.Marshal(out)
 	//	fmt.Println(string(c))
 	//}
+}
+
+func TestDecodeLoraPheasantCo2Data(t *testing.T) {
+	base64DataList := []string{
+		"AUEQAWkAOiEr8YoCRVcxLjMuNNjn",
+		"AUEQAWkAGh0L8XICQVcxLjMuNHvn",
+	}
+
+	for _, src := range base64DataList {
+		bs, _ := base64.StdEncoding.DecodeString(src)
+		fmt.Println(hex.EncodeToString(bs))
+
+		out, err := DecodeLoraPheasantCo2Data(bs)
+		if err != nil {
+			fmt.Println("error:", err)
+			continue
+		}
+		c, _ := json.Marshal(out)
+		fmt.Println(string(c))
+	}
 }
