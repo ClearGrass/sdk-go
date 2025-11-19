@@ -49,30 +49,26 @@ public class TLVEncoder {
     try {
         int cmdType = 0x32;
 
-        ByteArrayOutputStream reportIntervlPart = new ByteArrayOutputStream();
-        ByteArrayOutputStream collectIntervalPart = new ByteArrayOutputStream();
-        ByteArrayOutputStream valveOpenPart = new ByteArrayOutputStream();
-        ByteArrayOutputStream valveSelfCheckPart = new ByteArrayOutputStream();
-        ByteArrayOutputStream endFlagPart = new ByteArrayOutputStream();
-        ByteArrayOutputStream mqttSettingPart = new ByteArrayOutputStream();
+        ByteArrayOutputStream payloadPart = new ByteArrayOutputStream();
+
 
         int size = 0;
         if (cmd.collectInterval > 0) {
             int partLen = 2;
             byte[] collectBytes = intToBytesLittleEndian(cmd.collectInterval, partLen);
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            collectIntervalPart.write(0x05);
-            collectIntervalPart.write(partLenBytes);
-            collectIntervalPart.write(collectBytes);
+            payloadPart.write(0x05);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(collectBytes);
             size += 5;
         }
         if (cmd.reportIntervl > 0) {
             int partLen = 2;
             byte[] reportIntervlBytes = intToBytesLittleEndian(cmd.reportIntervl / 60, partLen);
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            reportIntervlPart.write(0x04);
-            reportIntervlPart.write(partLenBytes);
-            reportIntervlPart.write(reportIntervlBytes);
+            payloadPart.write(0x04);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(reportIntervlBytes);
             size += 5;
         }
         
@@ -80,9 +76,9 @@ public class TLVEncoder {
             int partLen = 2;
             byte[] valveBytes = intToBytesLittleEndian(cmd.valveOpen*10, partLen);
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            valveOpenPart.write(0x72);
-            valveOpenPart.write(partLenBytes);
-            valveOpenPart.write(valveBytes);
+            payloadPart.write(0x72);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(valveBytes);
             size += 5;
             cmdType = 0x3D;
         }
@@ -90,9 +86,9 @@ public class TLVEncoder {
         if (cmd.valveSelfCheck > 0) {
             int partLen = 1;
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            valveOpenPart.write(0x73);
-            valveOpenPart.write(partLenBytes);
-            valveOpenPart.write(0);
+            payloadPart.write(0x73);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(0);
             size += 4;
             cmdType = 0x3D;
         }
@@ -110,18 +106,18 @@ public class TLVEncoder {
 
             int partLen = mqttStr.getBytes().length;
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            mqttSettingPart.write(0x25);
-            mqttSettingPart.write(partLenBytes);
-            mqttSettingPart.write(mqttStr.getBytes());
+            payloadPart.write(0x25);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(mqttStr.getBytes());
             size += mqttStr.getBytes().length + 3;
         }
 
         if (cmd.endFlag > 0) {
             int partLen = 1;
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
-            endFlagPart.write(0x1D);
-            endFlagPart.write(partLenBytes);
-            endFlagPart.write(cmd.endFlag);
+            payloadPart.write(0x1D);
+            payloadPart.write(partLenBytes);
+            payloadPart.write(cmd.endFlag);
             size += 4;
         }
 
@@ -134,22 +130,10 @@ public class TLVEncoder {
         tlvEncode.write(sizeByte);
 
        
-        if (collectIntervalPart.size() > 0) {
-            tlvEncode.write(collectIntervalPart.toByteArray());
+        if (payloadPart.size() > 0) {
+            tlvEncode.write(payloadPart.toByteArray());
         }
-        if (reportIntervlPart.size() > 0) {
-            tlvEncode.write(reportIntervlPart.toByteArray());
-        }
-        if (valveOpenPart.size() > 0) {
-            tlvEncode.write(valveOpenPart.toByteArray());
-        }
-        if (mqttSettingPart.size() > 0) {
-            tlvEncode.write(mqttSettingPart.toByteArray());
-        }
-        if (endFlagPart.size() > 0) {
-            tlvEncode.write(endFlagPart.toByteArray());
-        }
-
+        
         int crc = byteSumU16(tlvEncode.toByteArray());
         tlvEncode.write(intToBytesLittleEndian(crc, 2));
 
