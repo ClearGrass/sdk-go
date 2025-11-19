@@ -13,7 +13,19 @@ public class TLVEncoder {
         public int valveOpen;
         public int valveSelfCheck;
         public int endFlag;
+        public MqttSetting mqttSetting;
     }
+
+    public static class MqttSetting {
+        public String host;
+        public int port;
+        public String username;
+        public String password;
+        public String clientId;
+        public String upTopic;
+        public String downTopic;
+    }
+
 
     // 生成crc
     public static int byteSumU16(byte[] in) {
@@ -42,6 +54,7 @@ public class TLVEncoder {
         ByteArrayOutputStream valveOpenPart = new ByteArrayOutputStream();
         ByteArrayOutputStream valveSelfCheckPart = new ByteArrayOutputStream();
         ByteArrayOutputStream endFlagPart = new ByteArrayOutputStream();
+        ByteArrayOutputStream mqttSettingPart = new ByteArrayOutputStream();
 
         int size = 0;
         if (cmd.collectInterval > 0) {
@@ -84,6 +97,25 @@ public class TLVEncoder {
             cmdType = 0x3D;
         }
 
+        if (cmd.mqttSetting != null) {
+            String mqttStr = String.format("%s %s %s %s %s %s %s",
+                cmd.mqttSetting.host,
+                cmd.mqttSetting.port,
+                cmd.mqttSetting.username,
+                cmd.mqttSetting.password,
+                cmd.mqttSetting.clientId,
+                cmd.mqttSetting.downTopic,
+                cmd.mqttSetting.upTopic
+            );
+
+            int partLen = mqttStr.getBytes().length;
+            byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
+            mqttSettingPart.write(0x25);
+            mqttSettingPart.write(partLenBytes);
+            mqttSettingPart.write(mqttStr.getBytes());
+            size += mqttStr.getBytes().length + 3;
+        }
+
         if (cmd.endFlag > 0) {
             int partLen = 1;
             byte[] partLenBytes = intToBytesLittleEndian(partLen, 2);
@@ -111,6 +143,9 @@ public class TLVEncoder {
         if (valveOpenPart.size() > 0) {
             tlvEncode.write(valveOpenPart.toByteArray());
         }
+        if (mqttSettingPart.size() > 0) {
+            tlvEncode.write(mqttSettingPart.toByteArray());
+        }
         if (endFlagPart.size() > 0) {
             tlvEncode.write(endFlagPart.toByteArray());
         }
@@ -137,11 +172,17 @@ public class TLVEncoder {
     public static void main(String[] args) {
         TLVEncoder encode = new TLVEncoder();
         Command cmd = new Command();
-        cmd.reportIntervl = 3600;
-        cmd.collectInterval = 600;
-        cmd.valveOpen = 50;
-        cmd.valveSelfCheck = 1;
+
+        cmd.cmd = 0x3a; // mqtt cmd 固定值
         cmd.endFlag = 1;
+        cmd.mqttSetting = new MqttSetting();
+        cmd.mqttSetting.host = "192.168.1.100";
+        cmd.mqttSetting.port = 1883;
+        cmd.mqttSetting.username = "user";
+        cmd.mqttSetting.password = "password";
+        cmd.mqttSetting.clientId = "clientId";
+        cmd.mqttSetting.downTopic = "qingping/mac/down";
+        cmd.mqttSetting.upTopic = "qingping/mac/up";
         byte[] bs = encode.tlvEncode(cmd);
 
         // 下发命令 直接下发数组，hex编码是为方便debug
