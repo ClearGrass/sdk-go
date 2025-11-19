@@ -47,11 +47,13 @@ public class TLVEncoder {
 
     public static byte[] tlvEncode(Command cmd) {
     try {
-        int cmdType = 0x32;
-
         ByteArrayOutputStream payloadPart = new ByteArrayOutputStream();
 
-
+        int cmdType = cmd.cmd;
+        if (cmdType == 0) {
+            cmdType = 0x32;
+        }
+        
         int size = 0;
         if (cmd.collectInterval > 0) {
             int partLen = 2;
