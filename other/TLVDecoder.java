@@ -137,11 +137,32 @@ public class TLVDecoder {
     }
 
     // 方法：将字节数组转换为有符号整数（小端序）
-    public static int bytesToIntLittleEndian(byte[] byteArray) {
+    public static int bytesToUIntLittleEndian(byte[] byteArray) {
         int val = 0;
         for (int i = 0; i < byteArray.length; i++) {
             val |= (byteArray[i] & 0xFF) << (i * 8);
         }
+        return val;
+    }
+    
+    public static int unsignedToSigned(int val, int byteLen) {
+        if (byteLen < 1 || byteLen > 8) {
+            throw new IllegalArgumentException("byteLen must be 1~8");
+        }
+
+        int bitLen = byteLen * 8;
+        long signBit = 1L << (bitLen - 1);
+
+        if ((val & signBit) != 0) {
+            // 符号扩展
+            val |= (-1L) << bitLen;
+        }
+        return val;
+    }
+
+    public static int bytesToIntLittleEndian(byte[] byteArray) {
+        int val =  bytesToUIntLittleEndian(byteArray);
+        val = unsignedToSigned(val,byteArray.length);
         return val;
     }
 
@@ -469,10 +490,19 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "4347415B00850D00D9F40A6907EC0028028F01F2003802005B00610000110500312E322E378102002209890100938A040096221100650100D964010064740200E40C7004000F000000860100052C0100008B010001710400EA0600001D0100007512";
-        byte[] bs = hexStringToByteArray(src);
-        TlvUnpackResult unpackData = tlvDecode(bs);
-        System.out.println(unpackData);
+        // String src = "4347415B00850D00D9F40A6907EC0028028F01F2003802005B00610000110500312E322E378102002209890100938A040096221100650100D964010064740200E40C7004000F000000860100052C0100008B010001710400EA0600001D0100007512";
+        // byte[] bs = hexStringToByteArray(src);
+        // TlvUnpackResult unpackData = tlvDecode(bs);
+        // System.out.println(unpackData);
+
+        byte[] bs = {(byte) 0xFF, (byte) 0xFF};
+        int val = bytesToUIntLittleEndian(bs);
+        
+        System.out.println(val);
+        val = bytesToIntLittleEndian(bs);
+        
+        System.out.println(val);
+
 
         // String src = "Q0cxIQADFQB4qwlphAPjAuABQ+QC4AFY5ALgAWA4AgBNAB0BAAEFCg==";
         // byte[] bs = Base64.getDecoder().decode(src);
