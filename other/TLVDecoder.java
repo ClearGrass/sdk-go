@@ -176,7 +176,12 @@ public class TLVDecoder {
     }
 
     // 数据包处理
+
     public static byte[] escapePacket(byte[] byteArray) {
+        return packetBytesReplace(byteArray);
+    }
+
+    public static byte[] packetBytesReplace(byte[] byteArray) {
         if (byteArray == null || byteArray.length < 3) {
             return byteArray;
         }
@@ -535,8 +540,8 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        String src = "2703004343034347344D003802002F00110500352E302E36220400303030302C01000067040003000000341000424332363059434E4641523031413034350500352E302E361D010001140C0007D0B069F2102E000064BB00E00D";
-        //String src = "4347312a003802002f001d010001031e0014c2b0698403dc202e000064d8402e000064d1502e000064da302e0000648b0a";
+        //String src = "2703004343034347344D003802002F00110500352E302E36220400303030302C01000067040003000000341000424332363059434E4641523031413034350500352E302E361D010001140C0007D0B069F2102E000064BB00E00D";
+        String src = "4347312a003802002f001d010001031e0014c2b0698403dc202e000064d8402e000064d1502e000064da302e0000648b0a";
         byte[] bs = hexStringToByteArray(src);
         TlvUnpackResult unpackData = tlvDecode(bs);
         System.out.println(unpackData);
