@@ -175,11 +175,56 @@ public class TLVDecoder {
         return sb.toString();
     }
 
+    // 数据包处理
+    public static byte[] escapePacket(byte[] byteArray) {
+        if (byteArray == null || byteArray.length < 3) {
+            return byteArray;
+        }
+
+        boolean isMatch = (byteArray[0] == (byte) 0x27) 
+                && (byteArray[1] == (byte) 0x03) 
+                && (byteArray[2] == (byte) 0x00);
+        if (!isMatch) {
+            return byteArray;
+        }
+
+        byte[] replaceBytes = {(byte) 0x1A, (byte) 0x1B, (byte) 0x08};
+
+
+        // 字节替换
+        java.util.Map<Byte, Byte> replaceMap = new java.util.HashMap<>(3);
+        for (int i = 0; i < 3; i++) {
+            byte sourceByte = byteArray[3 + i]; // 待替换字节（第4-6位）
+            if (sourceByte == 0x43) {
+                continue;
+            }
+
+            byte targetByte = replaceBytes[i]; // 对应的目标替换值
+            replaceMap.put(sourceByte, targetByte);
+        }
+
+        // 4. 处理剩余字节：从第7位（索引6）开始遍历，替换匹配的字节
+        byte[] processedBytes = new byte[byteArray.length-6];
+        // 遍历剩余字节并替换
+        for (int i = 6; i < byteArray.length; i++) {
+            byte currentByte = byteArray[i];
+            // 如果当前字节在替换Map中，用目标值替换；否则保留原字节
+            processedBytes[i-6] = replaceMap.getOrDefault(currentByte, currentByte);
+        }
+
+
+        //System.out.println(bytesToHex(processedBytes));
+        // 5. 返回处理后的字节数组
+        return processedBytes;
+    }
+
     // 方法：解包 TLV 数据
     public static TlvSubPackList tlvUnpack(byte[] byteArray) {
         if (byteArray.length < 5) {
             throw new IllegalArgumentException("字节数组长度不足以解包 TLV 数据");
         }
+
+        byteArray = escapePacket(byteArray);
 
         String cmd = String.format("%02x", byteArray[2]); // byteArray[2:3].hex()
         int length = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 3, 5)); // byteArray[3:5]
@@ -490,18 +535,19 @@ public class TLVDecoder {
 
     // 主方法
     public static void main(String[] args) {
-        // String src = "4347415B00850D00D9F40A6907EC0028028F01F2003802005B00610000110500312E322E378102002209890100938A040096221100650100D964010064740200E40C7004000F000000860100052C0100008B010001710400EA0600001D0100007512";
-        // byte[] bs = hexStringToByteArray(src);
-        // TlvUnpackResult unpackData = tlvDecode(bs);
-        // System.out.println(unpackData);
+        String src = "2703004343034347344D003802002F00110500352E302E36220400303030302C01000067040003000000341000424332363059434E4641523031413034350500352E302E361D010001140C0007D0B069F2102E000064BB00E00D";
+        //String src = "4347312a003802002f001d010001031e0014c2b0698403dc202e000064d8402e000064d1502e000064da302e0000648b0a";
+        byte[] bs = hexStringToByteArray(src);
+        TlvUnpackResult unpackData = tlvDecode(bs);
+        System.out.println(unpackData);
 
-        byte[] bs = {(byte) 0xFF, (byte) 0xFF};
-        int val = bytesToUIntLittleEndian(bs);
+        // byte[] bs = {(byte) 0xFF, (byte) 0xFF};
+        // int val = bytesToUIntLittleEndian(bs);
         
-        System.out.println(val);
-        val = bytesToIntLittleEndian(bs);
+        // System.out.println(val);
+        // val = bytesToIntLittleEndian(bs);
         
-        System.out.println(val);
+        // System.out.println(val);
 
 
         // String src = "Q0cxIQADFQB4qwlphAPjAuABQ+QC4AFY5ALgAWA4AgBNAB0BAAEFCg==";
