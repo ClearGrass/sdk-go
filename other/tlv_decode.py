@@ -143,7 +143,46 @@ def decodeSensorDataV2(byteArray):
         sensorData['light'] = lightVal
     return sensorData
 
+def escapePacket(byteArray):
+    return packetBytesReplace(byteArray)
+
+def packetBytesReplace(byteArray): 
+    if byteArray is None or len(byteArray) < 3:
+        return byteArray
+
+    # 判断前3个字节是否匹配
+    is_match = (
+        byteArray[0] == 0x27 and
+        byteArray[1] == 0x03 and
+        byteArray[2] == 0x00
+    )
+    if not is_match:
+        return byteArray
+
+    replace_bytes = [0x1A, 0x1B, 0x08]
+
+    # 构建替换映射
+    replace_map = {}
+    for i in range(3):
+        source_byte = byteArray[3 + i]  # 第4-6位
+        if source_byte == 0x43:
+            continue
+        target_byte = replace_bytes[i]
+        replace_map[source_byte] = target_byte
+
+    # 处理剩余字节（从第7位开始）
+    processed_bytes = bytearray(len(byteArray) - 6)
+
+    for i in range(6, len(byteArray)):
+        current_byte = byteArray[i]
+        processed_bytes[i - 6] = replace_map.get(current_byte, current_byte)
+
+    return bytes(processed_bytes)
+
+
 def tlvDecode(byteArray):
+    byteArray = escapePacket(byteArray)
+    
     unpackData = tlvUnpack(byteArray)
     outData = {'productId': unpackData['productId']}
     dataList = []
@@ -184,8 +223,9 @@ def tlvDecode(byteArray):
 # test
 if __name__ == '__main__':
     # decode hex data
-    #src = '43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109'
-    src = '43474281003802005b00650100bf640100ff110500312e302e3385170034da5b680aee00a8026c020e000e004300260000000000851700b8dd5b680aed00a00260020d000d0042003300000000008517003ce15b680aec00910252020e000f003e00320000000000851700c0e45b680aec0098024c020e000e0040002a00000000001d0100015d1a'
+    src = '43473442003802002900110500322e302e36220400303030302c01000067040004000000340500312e392e35350500322e302e361d010001140c00a82b0f6707332e00003ae6006109'
+    #src = '43474281003802005b00650100bf640100ff110500312e302e3385170034da5b680aee00a8026c020e000e004300260000000000851700b8dd5b680aed00a00260020d000d0042003300000000008517003ce15b680aec00910252020e000f003e00320000000000851700c0e45b680aec0098024c020e000e0040002a00000000001d0100015d1a'
+    #src = '2703004343034347344D003802002F00110500352E302E36220400303030302C01000067040003000000341000424332363059434E4641523031413034350500352E302E361D010001140C0007D0B069F2102E000064BB00E00D'
     bs = bytes.fromhex(src)
     out = tlvDecode(bs)
     print(out)
