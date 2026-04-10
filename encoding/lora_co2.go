@@ -36,6 +36,9 @@ func DecodeLoraPheasantCo2Data(dataBytes []byte) (out *MessagePod, err error) {
 				out.History = append(out.History, sensorData)
 			}
 		}
+
+	case 0x47:
+		out.IntervalSetting = parsePheasantCo2Setting(payload)
 	}
 
 	return
@@ -58,6 +61,19 @@ func parsePheasantCo2LoraSensorData(data []byte) (out *SensorData) {
 	out.Battery = &battery
 
 	return out
+}
+
+func parsePheasantCo2Setting(data []byte) (intervalSetting *IntervalSetting) {
+	intervalSetting = &IntervalSetting{}
+
+	rInterval := int(binary.BigEndian.Uint16(data[0:2]))
+	cInterval := int(binary.BigEndian.Uint16(data[2:4]))
+	bInterval := int(binary.BigEndian.Uint16(data[4:6]))
+
+	intervalSetting.ReportInterval = rInterval * 60
+	intervalSetting.CollectInterval = cInterval
+	intervalSetting.BleInterval = bInterval
+	return
 }
 
 func pheasantCo2LoraCrcCheck(data []byte) (err error) {

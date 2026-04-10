@@ -58,3 +58,22 @@ func TestDecodeLoraPheasantCo2Data(t *testing.T) {
 		fmt.Println(string(c))
 	}
 }
+
+func TestDecodeLoraPheasantCo2HexData(t *testing.T) {
+	base64DataList := []string{
+		//"014709003C03840000000000000000000000000000000000000503E805780000010100C32C",
+		"014709003C03840000000000000000000000000000000000000503E805780000010100C32C",
+	}
+
+	for _, src := range base64DataList {
+		bs, _ := hex.DecodeString(src)
+
+		out, err := DecodeLoraPheasantCo2Data(bs)
+		if err != nil {
+			fmt.Println("error:", err)
+			continue
+		}
+		c, _ := json.Marshal(out)
+		fmt.Println(string(c))
+	}
+}

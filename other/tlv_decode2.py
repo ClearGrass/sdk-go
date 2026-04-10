@@ -12,29 +12,22 @@ def bytesToIntLittleEndian(byteArray):
         val = val | byteArray[i] << i*8
     return val
 
-def crc_check_with_length(data: bytes, length: int) bool:
-    """
-    等价于 Go 版本的 CRC/校验和校验函数
-    :param data: 字节数据 (bytes)
-    :param length: 校验长度
-    :raises ValueError: 长度不匹配 / 校验和不匹配
-    """
-    size = len(data)
+def crc_check_with_length(data: bytes) -> bool:
+    # 长度检查
+    length = len(data)
+    if length < 2 :
+        return False
     
-    # 长度校验：长度至少2字节，且数据长度不能小于指定长度
-    if length < 2 or size < length:
-        raise ValueError("length not match")
+    # 读取小端 uint16 校验和
+    crc = bytesToIntLittleEndian(data[length-2 : length])
     
-    # 从 data[length-2 : length] 读取小端 uint16（Go: binary.LittleEndian.Uint16）
-    crc = struct.unpack('<H', data[length-2:length])[0]
-    
-    # 计算前 length-2 字节的累加和
+    # 计算累加和
     sum_val = 0
     for v in data[:length-2]:
         sum_val += v
     
-    # 校验和不匹配则抛错
-    return sum_val != crc
+    # 返回校验结果
+    return sum_val == crc
 
 # 解析以4347开头的hex数据
 def tlvUnpack(byteArray):
@@ -204,43 +197,47 @@ def packetBytesReplace(byteArray):
 
 
 def tlvDecode(byteArray):
+    print("origin:", byteArray.hex())
     byteArray = escapePacket(byteArray)
-    
-    if (not crc_check_with_length(byteArray,7)):
-        print("crc check faild")
-        return
+
+    if (not crc_check_with_length(byteArray)):
+        raise("crc check faild")
 
     unpackData = tlvUnpack(byteArray)
+    print("escape:", byteArray.hex(), " ", unpackData["length"]+7 )
+    
     outData = {'cmd': unpackData['cmd'], 'productId': unpackData['productId']}
     dataList = []
     
     for subPack in unpackData['subPackList']: 
-        if subPack['key'] == '14':
-            realtimeData = decodeRealTimeData(subPack['payload'], unpackData['productId'])
-            outData['sensorData'] = [realtimeData];
+        print({"key":subPack['key'],"value":subPack['payload'].hex()})
+
+        # if subPack['key'] == '14':
+        #     realtimeData = decodeRealTimeData(subPack['payload'], unpackData['productId'])
+        #     outData['sensorData'] = [realtimeData];
         
-        if subPack['key'] == '03':
-            historyeData = decodeHistoryData(subPack['payload'], unpackData['productId'])
-            outData['sensorData'] = historyeData;
+        # if subPack['key'] == '03':
+        #     historyeData = decodeHistoryData(subPack['payload'], unpackData['productId'])
+        #     outData['sensorData'] = historyeData;
 
-        if subPack['key'] == '11':
-            outData['version'] = subPack['payload'].decode("utf-8")
+        # if subPack['key'] == '11':
+        #     outData['version'] = subPack['payload'].decode("utf-8")
         
-        if subPack['key'] == '34':
-            outData['versionModel'] = subPack['payload'].decode("utf-8")
+        # if subPack['key'] == '34':
+        #     outData['versionModel'] = subPack['payload'].decode("utf-8")
 
-        if subPack['key'] == '35':
-            outData['versionMcu'] = subPack['payload'].decode("utf-8")
+        # if subPack['key'] == '35':
+        #     outData['versionMcu'] = subPack['payload'].decode("utf-8")
 
-        if subPack['key'] == '04':
-            reportInterval = bytesToIntLittleEndian(subPack['payload'])
-            outData['reportInterval'] = reportInterval
-        if subPack['key'] == '05':
-            collectInterval = bytesToIntLittleEndian(subPack['payload'])
-            outData['collectInterval'] = collectInterval
-        if subPack['key'] == '85':
-            sensorData = decodeSensorDataV2(subPack['payload'])
-            dataList.append(sensorData)
+        # if subPack['key'] == '04':
+        #     reportInterval = bytesToIntLittleEndian(subPack['payload'])
+        #     outData['reportInterval'] = reportInterval
+        # if subPack['key'] == '05':
+        #     collectInterval = bytesToIntLittleEndian(subPack['payload'])
+        #     outData['collectInterval'] = collectInterval
+        # if subPack['key'] == '85':
+        #     sensorData = decodeSensorDataV2(subPack['payload'])
+        #     dataList.append(sensorData)
 
     if len(dataList) > 0:
         outData['sensorData'] = dataList
@@ -250,7 +247,15 @@ def tlvDecode(byteArray):
 # test
 if __name__ == '__main__':
     # decode hex data
-    src = '2703004343034347311c0038020032001d010001141000ae06a45ec200ffff9f00fb1ccd0000007f03'
-    bs = bytes.fromhex(src)
-    out = tlvDecode(bs)
-    print(out)
+
+    srcList = [
+        '4347311c0038020032001d0100011410007124a35ee200ffff2f02e01ccd000000f607',
+        '2703004343034347311c0038020032001d010001141000ae06a45ec200ffff9f00fb1ccd0000007f03',
+        '2703004343034347311c0038020032001d010001141000fd13a45ec800ffff9f00ec1ccd000000d203',
+        '2703004303434347311c0038020032001d0100011410000703a45ecc00ffff9f00b31ccd000000af07'
+    ]
+
+    for src in srcList:
+        bs = bytes.fromhex(src)
+        out = tlvDecode(bs)
+        print(out)
