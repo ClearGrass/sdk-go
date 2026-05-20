@@ -75,6 +75,24 @@ func DecodeBleData(hexData string) (sensorData *SensorData, err error) {
 				battery := int64(sensorDataPack[sIndex+2])
 				sensorData.Battery = &battery
 			}
+
+		case 0x04:
+			open := int(sensorDataPack[sIndex+2])
+			sensorData.Open = &open
+
+		case 0x08, 0x0D:
+			body := int(sensorDataPack[sIndex+2])
+			sensorData.Body = &body
+
+			lumen := float64(binary.LittleEndian.Uint16(sensorDataPack[sIndex+3 : sIndex+5]))
+			sensorData.Lumen = &lumen
+
+		case 0x09:
+			lumen := float64(binary.LittleEndian.Uint16(sensorDataPack[sIndex+2 : sIndex+4]))
+			sensorData.Lumen = &lumen
+
+		case 0x0F:
+			sensorData.EventId = int(sensorDataPack[sIndex+2])
 		}
 
 		sIndex += 2 + sLen

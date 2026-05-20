@@ -193,6 +193,9 @@ type SensorData struct {
 	Noise           *float64 `json:"noise,omitempty"`            // 噪音
 	Lumen           *float64 `json:"lumen,omitempty"`            // 光照
 	Rssi            *int     `json:"rssi,omitempty"`             // 信号
+	Open            *int     `json:"open,omitempty"`             // 门厂打开
+	Body            *int     `json:"body,omitempty"`             // 人体感应
+	EventId         int      `json:"event_id,omitempty"`         // 事件id
 	Timestamp       int64    `json:"timestamp,omitempty"`        // 时间戳
 	Time            string   `json:"time,omitempty"`             // 字符集类型的时间
 }
