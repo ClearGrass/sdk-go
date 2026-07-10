@@ -471,6 +471,24 @@ public class TLVDecoder {
                 sensorData.tvoc = tvocVal;
                 sensorData.noise = noiseVal;
                 sensorData.light = lightVal;
+
+            case 0x13:
+                temperatureVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 5, 7));
+                humidityVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 7, 9));
+                co2Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 9, 11));
+                pm25Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 13, 15));
+                pm10Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 17, 19));
+                tvocVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 19, 21));
+                noiseVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 21, 23));
+                lightVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 23, 17));
+                sensorData.temperature =  temperatureVal/10.0;
+                sensorData.humidity = humidityVal/10.0;
+                sensorData.co2 = co2Val;
+                sensorData.pm25 = pm25Val;
+                sensorData.pm10 = pm10Val;
+                sensorData.tvoc = tvocVal;
+                sensorData.noise = noiseVal;
+                sensorData.light = lightVal;
                 break;
 
             default:
@@ -541,7 +559,7 @@ public class TLVDecoder {
     // 主方法
     public static void main(String[] args) {
         //String src = "2703004343034347344D003802002F00110500352E302E36220400303030302C01000067040003000000341000424332363059434E4641523031413034350500352E302E361D010001140C0007D0B069F2102E000064BB00E00D";
-        String src = "4347312a003802002f001d010001031e0014c2b0698403dc202e000064d8402e000064d1502e000064da302e0000648b0a";
+        String src = "4347417200851f00f463506a13f800560321020500070001f008004100320034000000000000003802003a006108003435353031313735110500312e322e3981020008098902004b018a04004c150000650100b36401006474020021107004001e0000002c0100008b010002710400db0e00001d0100015912";
         byte[] bs = hexStringToByteArray(src);
         TlvUnpackResult unpackData = tlvDecode(bs);
         System.out.println(unpackData);
