@@ -480,7 +480,7 @@ public class TLVDecoder {
                 pm10Val = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 17, 19));
                 tvocVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 19, 21));
                 noiseVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 21, 23));
-                lightVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 23, 17));
+                lightVal = bytesToIntLittleEndian(Arrays.copyOfRange(byteArray, 23, 27));
                 sensorData.temperature =  temperatureVal/10.0;
                 sensorData.humidity = humidityVal/10.0;
                 sensorData.co2 = co2Val;
